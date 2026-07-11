@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<script id="vertex-shader" type="x-shader/x-vertex">#version 300 es
+in vec4 vPosition;
+in vec3 vNormal;
+in vec2 vTexCoord;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 normalMatrix;
+uniform mat4 projectionMatrix;
+uniform float uTime;
+
+out vec3 fNormal;
+out vec3 fPos;
+out vec2 fTexCoord;
+
+void main()
+{
+    fPos = (modelViewMatrix * vPosition).xyz;       // eye coords passed to fragment shader
+    fNormal = normalize((normalMatrix * vec4(vNormal, 0.0)).xyz);       // transform normal into eye coords and pass to fragment shader
+    float wave = sin(vTexCoord.y * 10.0 + uTime * 2.0) * 0.05;      // makes wave distorition that changes over time
+    fTexCoord = fract(vTexCoord + vec2(wave + uTime * 0.001, uTime * 0.01));        // texture coords scrolled over time
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
+precision mediump float;
+
+uniform sampler2D texture1;
+uniform sampler2D texture2;
+uniform int useTextures;
+uniform int blendTextures;
+uniform int twoTextureMode;
+
+in vec3 fNormal;
+in vec3 fPos;
+in vec2 fTexCoord;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform vec4 lightPosition;
+uniform float shininess;
+
+layout(location=0) out vec4 fragColor;
+
+void main()
+{
+    vec3 N = normalize(fNormal);        // re-normalize (regain unit length after interpolation)
+    vec3 L = normalize(lightPosition.xyz - fPos);       // fragment to light vector 
+    vec3 V = normalize(-fPos);      // fragment to camera vector
+    vec3 H = normalize(L + V);      // halfway vector between L and V
+
+    float diff = max(dot(L, N), 0.0);       // dissuse intensity
+    float spec = pow(max(dot(N, H), 0.0), shininess);       // specular intensity
+    if (dot(L, N) < 0.0) spec = 0.0;        // if light is behind surface, no specular highlight
+
+    float rim = 1.0 - max(dot(V, N), 0.0);      // makes edges bright as subtracting by 1 flips it (dot(V, N) is 1 at centre and 0 at edges)
+    float rim_light = pow(rim, 3.0);     // power of 3 makes it so that only the very edges are bright, and the brightness falls off quickly as you move away from the edge
+    vec4 rim_colour = vec4(0.2, 0.5, 1.0, 1.0) * rim_light;        // colour multiplied by rim_light so glow is only visible at the edges  
+
+    vec4 ambient = ambientProduct;
+    vec4 diffuse = diffuseProduct * diff;
+    vec4 specular = specularProduct * spec;
+
+    vec4 litColor = ambient + diffuse + specular + rim_colour;      // add rim colour to the usual lighting components
+    litColor.a = 1.0;
+
+    if( blendTextures == 1)
+    {
+        if( twoTextureMode == 1 ) {
+            fragColor = litColor * mix(texture(texture1, fTexCoord), texture(texture2, fTexCoord), 0.5);        // equally blends two textures
+        } else {
+            fragColor = litColor * texture(texture1, fTexCoord);
+        }
+    }
+    else
+    {
+        fragColor = litColor;
+    }
+}
+</script>
+
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="objects.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+<br/>
+<br/>
+<div id="textureToggleButton">
+    <input id="textureToggleButtoni" type="button" value="Toggle Textures"/>
+</div>
+</body>
+</html>
