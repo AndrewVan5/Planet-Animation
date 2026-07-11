@@ -1,6 +1,6 @@
 # Planet-Animation
 
-This project was completed as part of my CSC 305 course at the University of Victoria. The assignment provided some starter code and requirements, and I implemented the remaining functionality, including designing and creating the entire scene.
+Interactive JavaScript animation simulating planets orbiting through space. Built using JavaScript to control object movement, animation timing, and visual rendering, demonstrating experience with graphics programming and creating dynamic web-based visualizations. It was completed as part of my CSC 305 course at the University of Victoria. The assignment provided some starter code and requirements, and I implemented the remaining functionality, including designing and creating the entire scene.
 
 To run:
 	1. Open a CMD (terminal) and navigate to the project folder (using "cd").
